@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://infinityfacilities.com/index.html</loc>
+    <lastmod>2025-12-02</lastmod>
+    <priority>1.00</priority>
+  </url>
+  <url>
+    <loc>https://infinityfacilities.com/about.html</loc>
+    <lastmod>2025-12-02</lastmod>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://infinityfacilities.com/services.html</loc>
+    <lastmod>2025-12-02</lastmod>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://infinityfacilities.com/projects.html</loc>
+    <lastmod>2025-12-02</lastmod>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://infinityfacilities.com/contact.html</loc>
+    <lastmod>2025-12-02</lastmod>
+    <priority>0.80</priority>
+  </url>
+</urlset>
