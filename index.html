@@ -140,11 +140,16 @@
         </div>
         <div class="md:hidden flex items-center">
           <button id="mobile-menu-button"
-            class="text-gray-600 hover:text-primary focus:outline-none p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            class="text-gray-600 hover:text-primary focus:outline-none p-2 rounded-lg hover:bg-gray-100 transition-colors group"
             aria-label="Toggle menu">
-            <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            <div class="w-6 h-5 relative flex flex-col justify-between overflow-hidden">
+              <span
+                class="w-full h-0.5 bg-current transform transition-all duration-300 origin-left group-focus:translate-x-0"></span>
+              <span
+                class="w-full h-0.5 bg-current transform transition-all duration-300 group-focus:translate-x-0"></span>
+              <span
+                class="w-full h-0.5 bg-current transform transition-all duration-300 origin-left group-focus:translate-x-0"></span>
+            </div>
           </button>
         </div>
       </div>
@@ -491,7 +496,6 @@
               </svg>
             </a>
           </div>
-
         </div>
 
         <div data-aos="fade-up" data-aos-delay="200">
@@ -568,11 +572,26 @@
     // Hamburger Menu Toggle
     const mobileMenuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
+    const spans = mobileMenuButton.querySelectorAll('span');
 
     if (mobileMenuButton && mobileMenu) {
       mobileMenuButton.addEventListener('click', () => {
         mobileMenu.classList.toggle('hidden');
+
+        // Animate hamburger to X
+        if (!mobileMenu.classList.contains('hidden')) {
+          spans[0].classList.add('rotate-45', 'translate-y-2');
+          spans[1].classList.add('opacity-0');
+          spans[2].classList.add('-rotate-45', '-translate-y-2');
+
+        } else {
+          spans[0].classList.remove('rotate-45', 'translate-y-2');
+          spans[1].classList.remove('opacity-0');
+          spans[2].classList.remove('-rotate-45', '-translate-y-2');
+
+        }
       });
+
     }
 
     // Navbar scroll effect
@@ -581,9 +600,11 @@
       if (window.scrollY > 50) {
         navbar.classList.add('shadow-md');
         navbar.classList.replace('h-24', 'h-20');
+
       } else {
         navbar.classList.remove('shadow-md');
         navbar.classList.replace('h-20', 'h-24');
+
       }
     });
   </script>

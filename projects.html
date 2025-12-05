@@ -141,13 +141,16 @@
                 </div>
                 <div class="md:hidden flex items-center">
                     <button id="mobile-menu-button"
-                        class="text-gray-600 hover:text-primary focus:outline-none p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                        aria-label="Toggle menu"
-                        onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
-                        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
+                        class="text-gray-600 hover:text-primary focus:outline-none p-2 rounded-lg hover:bg-gray-100 transition-colors group"
+                        aria-label="Toggle menu">
+                        <div class="w-6 h-5 relative flex flex-col justify-between overflow-hidden">
+                            <span
+                                class="w-full h-0.5 bg-current transform transition-all duration-300 origin-left group-focus:translate-x-0"></span>
+                            <span
+                                class="w-full h-0.5 bg-current transform transition-all duration-300 group-focus:translate-x-0"></span>
+                            <span
+                                class="w-full h-0.5 bg-current transform transition-all duration-300 origin-left group-focus:translate-x-0"></span>
+                        </div>
                     </button>
                 </div>
             </div>
@@ -369,71 +372,11 @@
 
                 </div>
 
-                <div data-aos="fade-up" data-aos-delay="200">
-                    <h4 class="text-xl font-bold mb-8 text-white border-b-2 border-accent inline-block pb-2">Quick
-                        Links</h4>
-                    <ul class="space-y-4 text-lg">
-                        <li><a href="index.html"
-                                class="text-gray-400 hover:text-accent transition-colors flex items-center"><span
-                                    class="mr-3 text-accent">›</span> Home</a></li>
-                        <li><a href="about.html"
-                                class="text-gray-400 hover:text-accent transition-colors flex items-center"><span
-                                    class="mr-3 text-accent">›</span> About Us</a></li>
-                        <li><a href="services.html"
-                                class="text-gray-400 hover:text-accent transition-colors flex items-center"><span
-                                    class="mr-3 text-accent">›</span> Services</a></li>
-                        <li><a href="projects.html"
-                                class="text-gray-400 hover:text-accent transition-colors flex items-center"><span
-                                    class="mr-3 text-accent">›</span> Projects</a></li>
-                        <li><a href="contact.html"
-                                class="text-gray-400 hover:text-accent transition-colors flex items-center"><span
-                                    class="mr-3 text-accent">›</span> Contact</a></li>
-                    </ul>
-                </div>
-
-                <div data-aos="fade-up" data-aos-delay="400">
-                    <h4 class="text-xl font-bold mb-8 text-white border-b-2 border-accent inline-block pb-2">Contact
-                        Info</h4>
-                    <ul class="space-y-6 text-lg">
-                        <li class="flex items-start">
-                            <svg class="w-6 h-6 text-accent mr-4 mt-1 flex-shrink-0" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
-                                </path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                            <span class="text-gray-400">Office No: 508, Chandra Sphnix, Near PWD Bridge, Raipur,
-                                C.G</span>
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-6 h-6 text-accent mr-4 flex-shrink-0" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
-                                </path>
-                            </svg>
-                            <span class="text-gray-400">+91-7694095011, 7389899888</span>
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-6 h-6 text-accent mr-4 flex-shrink-0" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
-                                </path>
-                            </svg>
-                            <span class="text-gray-400">infinityfacilitiesmanagement@gmail.com</span>
-                        </li>
-                    </ul>
+                <div class="border-t border-gray-800 pt-10 text-center">
+                    <p class="text-gray-500 text-sm">&copy; 2025 Infinity Facilities Management. All rights reserved.
+                    </p>
                 </div>
             </div>
-
-            <div class="border-t border-gray-800 pt-10 text-center">
-                <p class="text-gray-500 text-sm">&copy; 2025 Infinity Facilities Management. All rights reserved.
-                </p>
-            </div>
-        </div>
     </footer>
 
     <script>
@@ -443,26 +386,26 @@
                 id: 1,
                 title: "Maruti Lifestyle",
                 category: "residential",
-                logo: "assets/img/infinity-facilities-management-logo.webp", // Fallback
-                image: "assets/img/maruti-project.webp",
+                logo: "assets/img/avinash-group-logo.webp",
+                image: "assets/img/maruti-lifestyle-building.webp",
                 description: "A premium residential township by Avinash Group offering world-class amenities and a luxurious lifestyle. Features spacious villas and apartments surrounded by lush greenery.",
                 features: ["Gated Community", "Clubhouse", "Swimming Pool", "24/7 Security", "Landscaped Gardens"]
             },
             {
                 id: 2,
                 title: "Avinash One",
-                category: "residential",
-                logo: "assets/img/infinity-facilities-management-logo.webp", // Fallback
-                image: "assets/img/avinash-project.webp",
+                category: "commercial",
+                logo: "assets/img/avinash-group-logo.webp",
+                image: "assets/img/avinash-one-building.webp",
                 description: "The tallest building in Chhattisgarh, Avinash One redefines luxury living with sky-high amenities and breathtaking views of Raipur.",
                 features: ["Sky Lounge", "Infinity Pool", "Smart Home Automation", "Premium Concierge", "High-speed Elevators"]
             },
             {
                 id: 3,
                 title: "Chandra Icon",
-                category: "residential",
-                logo: "assets/img/projects/chandra-logo.png", // Real logo
-                image: "assets/img/avinash-project.webp", // Placeholder image
+                category: "commercial",
+                logo: "assets/img/projects/chandra-logo.png",
+                image: "assets/img/commercial-project.webp",
                 description: "A modern residential complex by Chandra Projects, designed for comfort and connectivity. Offers well-planned apartments with essential amenities.",
                 features: ["Strategic Location", "Modern Architecture", "Community Hall", "Children's Play Area", "Power Backup"]
             },
@@ -470,8 +413,8 @@
                 id: 4,
                 title: "Golden Trade Centre",
                 category: "commercial",
-                logo: "assets/img/infinity-facilities-management-logo.webp", // Fallback
-                image: "assets/img/commercial-project.webp",
+                logo: "assets/img/golden-project.webp",
+                image: "assets/img/golden-trade-centre-building.webp",
                 description: "A landmark commercial hub in Raipur, Golden Trade Centre offers premium office spaces and retail outlets for growing businesses.",
                 features: ["Prime Commercial Location", "Ample Parking", "Modern Facade", "High Visibility", "24/7 Maintenance"]
             },
@@ -479,8 +422,8 @@
                 id: 5,
                 title: "ASG Eye Hospital",
                 category: "healthcare",
-                logo: "assets/img/infinity-facilities-management-logo.webp", // Fallback
-                image: "assets/img/hospital-project.webp",
+                logo: "assets/img/asg-eye-hospital-logo.webp",
+                image: "assets/img/asg-eye-hospital-building.webp",
                 description: "State-of-the-art eye care facility providing comprehensive ophthalmic services. Managed by Infinity Facilities Management for optimal operational efficiency.",
                 features: ["Specialized OT Cleaning", "Bio-medical Waste Management", "Hygiene Maintenance", "Patient Support Services", "24/7 Facility Support"]
             },
@@ -488,8 +431,8 @@
                 id: 6,
                 title: "Carcinoma Cancer Clinic",
                 category: "healthcare",
-                logo: "assets/img/infinity-facilities-management-logo.webp", // Fallback
-                image: "assets/img/hospital-project.webp",
+                logo: "assets/img/hospital-project.webp",
+                image: "assets/img/carcinoma-clinic-building.webp",
                 description: "Advanced cancer care center focused on patient comfort and hygiene. Our facility management ensures a sterile and safe environment for patients.",
                 features: ["Sterile Environment", "Infection Control", "Specialized Housekeeping", "HVAC Maintenance", "Emergency Response Support"]
             }
@@ -527,7 +470,7 @@
                 // Card Layout: Logo Centered
                 card.innerHTML = `
                     <div class="relative h-64 overflow-hidden bg-gray-50 p-8 flex items-center justify-center">
-                        <img src="${project.logo}" alt="${project.title}" class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-110" onerror="this.src='assets/img/infinity-facilities-management-logo.webp'">
+                        <img src="${project.logo}" alt="${project.title}" class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105" onerror="this.src='assets/img/infinity-facilities-management-logo.webp'">
                         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
                         <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
                             <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white shadow-lg">
@@ -600,13 +543,25 @@
                 offset: 100
             });
 
-            // Mobile menu toggle
-            const btn = document.getElementById('mobile-menu-btn');
-            const menu = document.getElementById('mobile-menu');
+            // Hamburger Menu Toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const spans = mobileMenuButton.querySelectorAll('span');
 
-            if (btn && menu) {
-                btn.addEventListener('click', () => {
-                    menu.classList.toggle('hidden');
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+
+                    // Animate hamburger to X
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        spans[0].classList.add('rotate-45', 'translate-y-2');
+                        spans[1].classList.add('opacity-0');
+                        spans[2].classList.add('-rotate-45', '-translate-y-2');
+                    } else {
+                        spans[0].classList.remove('rotate-45', 'translate-y-2');
+                        spans[1].classList.remove('opacity-0');
+                        spans[2].classList.remove('-rotate-45', '-translate-y-2');
+                    }
                 });
             }
 
