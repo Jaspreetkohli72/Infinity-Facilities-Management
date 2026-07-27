@@ -664,10 +664,19 @@ if HAS_PYSIDE:
             super().__init__()
             self.root = workspace_root
             self.gm = GitManager(self.root)
+            self.cm = ConfigManager(self.root)
 
         def run(self) -> None:
-            self.log_signal.emit("[Git Sync] Pulling latest repository updates from remote...")
-            ok, msg = self.gm.run_command(["git", "pull"], log_callback=self.log_signal.emit)
+            config = self.cm.load_config()
+            branch = config.get("branch", "main") or "main"
+            self.log_signal.emit(f"[Git Sync] Pulling latest updates from origin/{branch}...")
+            
+            ok, msg = self.gm.run_command(["git", "pull", "origin", branch], log_callback=self.log_signal.emit)
+            if not ok:
+                # Set upstream tracking if missing and retry pull
+                self.gm.run_command(["git", "branch", f"--set-upstream-to=origin/{branch}", branch], log_callback=self.log_signal.emit)
+                ok, msg = self.gm.run_command(["git", "pull", "origin", branch], log_callback=self.log_signal.emit)
+
             if ok:
                 self.finished_signal.emit(True, "Successfully synced with latest remote Git repository.")
             else:
@@ -686,13 +695,17 @@ if HAS_PYSIDE:
             self.pm = ProjectManager(self.root)
             self.am = AssetManager(self.root)
             self.gm = GitManager(self.root)
+            self.cm = ConfigManager(self.root)
 
         def run(self) -> None:
             try:
+                config = self.cm.load_config()
+                branch = config.get("branch", "main") or "main"
+
                 # Step 0: Pull latest repository changes before starting publish
-                self.progress_signal.emit(5, "Syncing latest repository state (git pull)...")
-                self.log_signal.emit("[Publish] Pulling latest repository changes before adding project...")
-                self.gm.run_command(["git", "pull"], log_callback=self.log_signal.emit)
+                self.progress_signal.emit(5, f"Syncing latest repository state (git pull origin {branch})...")
+                self.log_signal.emit(f"[Publish] Pulling latest repository changes from origin/{branch}...")
+                self.gm.run_command(["git", "pull", "origin", branch], log_callback=self.log_signal.emit)
 
                 # Step 1: Validation
                 self.progress_signal.emit(15, "Validating project information...")
@@ -744,14 +757,18 @@ if HAS_PYSIDE:
                     return
 
                 # Step 6: Git Push
-                self.progress_signal.emit(95, "Running git push...")
-                ok, msg = self.gm.run_command(["git", "push"], log_callback=self.log_signal.emit)
+                self.progress_signal.emit(95, f"Running git push origin {branch}...")
+                ok, msg = self.gm.run_command(["git", "push", "origin", branch], log_callback=self.log_signal.emit)
                 if not ok:
                     self.finished_signal.emit(False, f"Git push failed: {msg}")
                     return
 
                 self.progress_signal.emit(100, "Published successfully!")
                 self.finished_signal.emit(True, f"Project '{self.project.title}' published and pushed successfully!")
+
+            except Exception as e:
+                self.log_signal.emit(f"ERROR: {str(e)}")
+                self.finished_signal.emit(False, f"Unexpected error: {str(e)}")
 
             except Exception as e:
                 self.log_signal.emit(f"ERROR: {str(e)}")
