@@ -267,7 +267,10 @@ class GitManager:
         auth_url = repo_url
         if token and "github.com" in repo_url:
             clean_url = repo_url.split("github.com/")[-1]
-            auth_url = f"https://{token}@github.com/{clean_url}"
+            if user_name and ":" not in token:
+                auth_url = f"https://{user_name}:{token}@github.com/{clean_url}"
+            else:
+                auth_url = f"https://{token}@github.com/{clean_url}"
 
         # Initialize .git if not present
         if not self.is_git_repo():
@@ -365,9 +368,10 @@ if HAS_PYSIDE:
             token: str,
             branch: str,
             user_name: str,
-            user_email: str
+            user_email: str,
+            parent=None
         ) -> None:
-            super().__init__()
+            super().__init__(parent)
             self.root = workspace_root
             self.repo_url = repo_url
             self.token = token
@@ -377,15 +381,19 @@ if HAS_PYSIDE:
             self.gm = GitManager(self.root)
 
         def run(self) -> None:
-            ok, msg = self.gm.setup_repository(
-                repo_url=self.repo_url,
-                token=self.token,
-                branch=self.branch,
-                user_name=self.user_name,
-                user_email=self.user_email,
-                log_callback=self.log_signal.emit
-            )
-            self.finished_signal.emit(ok, msg)
+            try:
+                ok, msg = self.gm.setup_repository(
+                    repo_url=self.repo_url,
+                    token=self.token,
+                    branch=self.branch,
+                    user_name=self.user_name,
+                    user_email=self.user_email,
+                    log_callback=self.log_signal.emit
+                )
+                self.finished_signal.emit(ok, msg)
+            except Exception as e:
+                self.log_signal.emit(f"ERROR: {str(e)}")
+                self.finished_signal.emit(False, str(e))
 
 
     class GitSetupDialog(QDialog):
@@ -481,18 +489,28 @@ if HAS_PYSIDE:
             btn_h = QHBoxLayout()
             self.setup_btn = QPushButton("🚀 Initialize & Sync Repository")
             self.setup_btn.setObjectName("actionBtn")
+            self.setup_btn.setAutoDefault(False)
+            self.setup_btn.setDefault(False)
             self.setup_btn.clicked.connect(self.on_setup_clicked)
 
             save_btn = QPushButton("Save Settings Only")
+            save_btn.setAutoDefault(False)
+            save_btn.setDefault(False)
             save_btn.clicked.connect(self.on_save_clicked)
 
             close_btn = QPushButton("Close")
+            close_btn.setAutoDefault(False)
+            close_btn.setDefault(False)
             close_btn.clicked.connect(self.accept)
 
             btn_h.addWidget(self.setup_btn)
             btn_h.addWidget(save_btn)
             btn_h.addWidget(close_btn)
             layout.addLayout(btn_h)
+
+        def append_log_text(self, text: str) -> None:
+            self.log_output.append(text)
+            self.log_output.ensureCursorVisible()
 
         def get_data(self) -> Dict[str, str]:
             return {
@@ -506,8 +524,8 @@ if HAS_PYSIDE:
         def on_save_clicked(self) -> None:
             data = self.get_data()
             self.cm.save_config(data)
-            self.log_output.append("[Config] Settings saved to uploader_config.json")
-            QMessageBox.information(self, "Saved", "Settings saved successfully!")
+            self.append_log_text("[Config] Settings saved to uploader_config.json")
+            QMessageBox.information(self, "Saved", "Settings saved successfully to uploader_config.json!")
 
         def on_setup_clicked(self) -> None:
             data = self.get_data()
@@ -515,9 +533,17 @@ if HAS_PYSIDE:
                 QMessageBox.warning(self, "Input Error", "Repository URL is required.")
                 return
 
+            if not self.gm.is_git_installed():
+                QMessageBox.critical(
+                    self,
+                    "Git CLI Missing",
+                    "Git CLI is not installed on this system.\n\nPlease install Git for Windows from https://git-scm.com and restart the application."
+                )
+                return
+
             self.cm.save_config(data)
             self.log_output.clear()
-            self.log_output.append("[Setup] Initializing background repository sync...")
+            self.append_log_text("[Setup] Initializing background repository sync...")
             self.setup_btn.setEnabled(False)
 
             self.worker = SetupWorker(
@@ -526,17 +552,21 @@ if HAS_PYSIDE:
                 token=data["token"],
                 branch=data["branch"],
                 user_name=data["git_name"],
-                user_email=data["git_email"]
+                user_email=data["git_email"],
+                parent=self
             )
-            self.worker.log_signal.connect(self.log_output.append)
-            def on_finished(ok: bool, msg: str):
-                self.setup_btn.setEnabled(True)
-                if ok:
-                    QMessageBox.information(self, "Git Setup Complete", msg)
-                else:
-                    QMessageBox.critical(self, "Setup Failed", msg)
-            self.worker.finished_signal.connect(on_finished)
+            self.worker.log_signal.connect(self.append_log_text)
+            self.worker.finished_signal.connect(self.on_setup_finished)
             self.worker.start()
+
+        def on_setup_finished(self, ok: bool, msg: str) -> None:
+            self.setup_btn.setEnabled(True)
+            if ok:
+                self.append_log_text(f"[Setup Complete] {msg}")
+                QMessageBox.information(self, "Git Setup Complete", msg)
+            else:
+                self.append_log_text(f"[Setup Failed] {msg}")
+                QMessageBox.critical(self, "Setup Failed", msg)
 
     class StartupSyncWorker(QThread):
         """Worker thread to pull latest files from Git on app launch or manual sync."""
