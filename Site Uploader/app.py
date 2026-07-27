@@ -594,6 +594,7 @@ if HAS_PYSIDE:
             self.root = workspace_root
             self.pm = ProjectManager(self.root)
             
+            self.log_console: Optional[QTextEdit] = None
             self.cover_path: Optional[str] = None
             self.logo_path: Optional[str] = None
             self.gallery_paths: List[str] = []
@@ -908,7 +909,7 @@ if HAS_PYSIDE:
             main_layout.addLayout(bottom_v)
 
         def run_git_sync(self, silent_success: bool = False) -> None:
-            self.log_console.append("[Startup] Checking for remote repository updates...")
+            self.append_log("[Startup] Checking for remote repository updates...")
             self.sync_worker = StartupSyncWorker(self.root)
             self.sync_worker.log_signal.connect(self.append_log)
             def on_sync_finished(success: bool, msg: str):
@@ -1028,7 +1029,10 @@ if HAS_PYSIDE:
             self.progress_bar.setValue(val)
 
         def append_log(self, text: str) -> None:
-            self.log_console.append(text)
+            if hasattr(self, 'log_console') and self.log_console is not None:
+                self.log_console.append(text)
+            else:
+                print(text)
 
         def prompt_token_dialog(self) -> None:
             token, ok = QInputDialog.getText(
