@@ -480,64 +480,23 @@
     </footer>
 
     <script>
-        // Project Data
-        const projects = [
-            {
-                id: 1,
-                title: "Maruti Lifestyle",
-                category: "residential",
-                logo: "assets/img/avinash-group-logo.webp",
-                image: "assets/img/maruti-lifestyle-img.jpg",
-                description: "A premium residential township by Avinash Group offering world-class amenities and a luxurious lifestyle. Features spacious villas and apartments surrounded by lush greenery.",
-                features: ["Gated Community", "Clubhouse", "Swimming Pool", "24/7 Security", "Landscaped Gardens"]
-            },
-            {
-                id: 2,
-                title: "Avinash One",
-                category: "commercial",
-                logo: "assets/img/avinash-group-logo.webp",
-                image: "assets/img/avinash-one-building.webp",
-                description: "The tallest building in Chhattisgarh, Avinash One redefines luxury living with sky-high amenities and breathtaking views of Raipur.",
-                features: ["Sky Lounge", "Infinity Pool", "Smart Home Automation", "Premium Concierge", "High-speed Elevators"]
-            },
-            {
-                id: 3,
-                title: "Chandra Icon",
-                category: "commercial",
-                logo: "assets/img/projects/chandra-logo.png",
-                logoStyle: "filter: invert(1) brightness(0);",
-                image: "assets/img/commercial-project.webp",
-                description: "A modern residential complex by Chandra Projects, designed for comfort and connectivity. Offers well-planned apartments with essential amenities.",
-                features: ["Strategic Location", "Modern Architecture", "Community Hall", "Children's Play Area", "Power Backup"]
-            },
-            {
-                id: 4,
-                title: "Golden Trade Centre",
-                category: "commercial",
-                logo: "assets/img/projects/golden-trade-centre-logo.webp",
-                image: "assets/img/golden-trade-centre-building.webp",
-                description: "A landmark commercial hub in Raipur, Golden Trade Centre offers premium office spaces and retail outlets for growing businesses.",
-                features: ["Prime Commercial Location", "Ample Parking", "Modern Facade", "High Visibility", "24/7 Maintenance"]
-            },
-            {
-                id: 5,
-                title: "ASG Eye Hospital",
-                category: "healthcare",
-                logo: "assets/img/asg-eye-hospital-logo.webp",
-                image: "assets/img/asg-eye-hospital-building.webp",
-                description: "State-of-the-art eye care facility providing comprehensive ophthalmic services. Managed by Infinity Facilities Management for optimal operational efficiency.",
-                features: ["Specialized OT Cleaning", "Bio-medical Waste Management", "Hygiene Maintenance", "Patient Support Services", "24/7 Facility Support"]
-            },
-            {
-                id: 6,
-                title: "Carcinoma Cancer Clinic",
-                category: "healthcare",
-                logo: "assets/img/projects/carcinoma-clinic-logo.webp",
-                image: "assets/img/carcinoma-clinic-building.webp",
-                description: "Advanced cancer care center focused on patient comfort and hygiene. Our facility management ensures a sterile and safe environment for patients.",
-                features: ["Sterile Environment", "Infection Control", "Specialized Housekeeping", "HVAC Maintenance", "Emergency Response Support"]
+        // Project Data loaded dynamically from projects.json
+        let projects = [];
+
+        async function fetchProjects() {
+            try {
+                const response = await fetch('projects.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        projects = data;
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not fetch projects.json directly:', err);
             }
-        ];
+            renderProjects();
+        }
 
         // Render Projects
         function renderProjects(filter = 'all') {
@@ -571,7 +530,7 @@
                 // Card Layout: Logo Centered
                 card.innerHTML = `
                     <div class="relative h-64 overflow-hidden bg-gray-50 p-8 flex items-center justify-center">
-                        <img src="${project.logo}" alt="${project.title}" style="${project.logoStyle || ''}" class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105" onerror="this.src='assets/img/infinity-facilities-management-logo.webp'">
+                        <img src="${project.logo || project.image}" alt="${project.title}" style="${project.logoStyle || ''}" class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105" onerror="this.src='assets/img/infinity-facilities-management-logo.webp'">
                         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
                         <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
                             <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white shadow-lg">
@@ -678,8 +637,8 @@
                 }
             });
 
-            // Initial render
-            renderProjects();
+            // Initial render - fetch dynamically from projects.json
+            fetchProjects();
         });
 
         // Close modal on outside click
