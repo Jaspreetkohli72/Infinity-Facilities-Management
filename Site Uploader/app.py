@@ -219,6 +219,24 @@ class GitManager:
 # ==========================================
 
 if HAS_PYSIDE:
+    class StartupSyncWorker(QThread):
+        """Worker thread to pull latest files from Git on app launch or manual sync."""
+        log_signal = Signal(str)
+        finished_signal = Signal(bool, str)
+
+        def __init__(self, workspace_root: Path) -> None:
+            super().__init__()
+            self.root = workspace_root
+            self.gm = GitManager(self.root)
+
+        def run(self) -> None:
+            self.log_signal.emit("[Git Sync] Pulling latest repository updates from remote...")
+            ok, msg = self.gm.run_command(["git", "pull"], log_callback=self.log_signal.emit)
+            if ok:
+                self.finished_signal.emit(True, "Successfully synced with latest remote Git repository.")
+            else:
+                self.finished_signal.emit(False, f"Git pull notice: {msg}")
+
     class PublishWorker(QThread):
         """Worker thread for publishing projects without freezing UI."""
         progress_signal = Signal(int, str)
@@ -235,8 +253,13 @@ if HAS_PYSIDE:
 
         def run(self) -> None:
             try:
+                # Step 0: Pull latest repository changes before starting publish
+                self.progress_signal.emit(5, "Syncing latest repository state (git pull)...")
+                self.log_signal.emit("[Publish] Pulling latest repository changes before adding project...")
+                self.gm.run_command(["git", "pull"], log_callback=self.log_signal.emit)
+
                 # Step 1: Validation
-                self.progress_signal.emit(10, "Validating project information...")
+                self.progress_signal.emit(15, "Validating project information...")
                 self.log_signal.emit(f"Starting publish process for '{self.project.title}'...")
                 valid, err = self.pm.validate_project(self.project)
                 if not valid:
@@ -244,14 +267,14 @@ if HAS_PYSIDE:
                     return
 
                 # Step 2: Copy Assets
-                self.progress_signal.emit(30, "Copying image assets...")
+                self.progress_signal.emit(35, "Copying image assets...")
                 cover_rel, logo_rel, gallery_rels = self.am.process_assets(
                     self.project,
                     log_callback=lambda m: self.log_signal.emit(f"[Assets] {m}")
                 )
 
                 # Step 3: Append to projects.json
-                self.progress_signal.emit(50, "Updating projects.json...")
+                self.progress_signal.emit(55, "Updating projects.json...")
                 next_id = self.pm.get_next_id()
                 project_entry: Dict[str, Any] = {
                     "id": next_id,
@@ -309,8 +332,10 @@ if HAS_PYSIDE:
             self.logo_path: Optional[str] = None
             self.gallery_paths: List[str] = []
             self.worker: Optional[PublishWorker] = None
+            self.sync_worker: Optional[StartupSyncWorker] = None
 
             self.init_ui()
+            self.run_git_sync(silent_success=True)
 
         def init_ui(self) -> None:
             self.setWindowTitle("Infinity Facilities Management - Project Uploader")
@@ -589,15 +614,32 @@ if HAS_PYSIDE:
             self.publish_btn.setObjectName("publishBtn")
             self.publish_btn.clicked.connect(self.on_publish_clicked)
 
+            sync_btn = QPushButton("🔄 Pull Latest Git")
+            sync_btn.setObjectName("secondaryBtn")
+            sync_btn.clicked.connect(lambda: self.run_git_sync(silent_success=False))
+
             clear_btn = QPushButton("Reset Form")
             clear_btn.setObjectName("secondaryBtn")
             clear_btn.clicked.connect(self.reset_form)
 
             bottom_h.addWidget(self.publish_btn, stretch=2)
+            bottom_h.addWidget(sync_btn, stretch=1)
             bottom_h.addWidget(clear_btn, stretch=1)
 
             bottom_v.addLayout(bottom_h)
             main_layout.addLayout(bottom_v)
+
+        def run_git_sync(self, silent_success: bool = False) -> None:
+            self.log_console.append("[Startup] Checking for remote repository updates...")
+            self.sync_worker = StartupSyncWorker(self.root)
+            self.sync_worker.log_signal.connect(self.append_log)
+            def on_sync_finished(success: bool, msg: str):
+                if not success:
+                    self.append_log(f"[Git Notice] {msg}")
+                elif not silent_success:
+                    QMessageBox.information(self, "Git Sync Complete", msg)
+            self.sync_worker.finished_signal.connect(on_sync_finished)
+            self.sync_worker.start()
 
         def add_feature(self) -> None:
             txt = self.feature_edit.text().strip()

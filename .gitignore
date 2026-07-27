@@ -23,4 +23,6 @@ __pycache__/
 build/
 dist/
 *.spec
+Site Uploader/ProjectUploader/
+
 
