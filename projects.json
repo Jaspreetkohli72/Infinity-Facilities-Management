@@ -114,21 +114,4 @@
       "Emergency Response Support"
     ]
   },
-  {
-    "id": 7,
-    "title": "test",
-    "category": "residential",
-    "client": "es",
-    "completionDate": "es",
-    "location": "es",
-    "logo": "assets/img/projects/test/logo.webp",
-    "image": "assets/img/projects/test/cover.png",
-    "gallery": [
-      "assets/img/projects/test/gallery-1.webp"
-    ],
-    "description": "testtttttttttt",
-    "features": [
-      "es"
-    ]
-  }
 ]
