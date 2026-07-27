@@ -12,7 +12,8 @@ try:
         QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
         QLabel, QLineEdit, QTextEdit, QComboBox, QPushButton, QFileDialog,
         QListWidget, QListWidgetItem, QProgressBar, QMessageBox, QFrame,
-        QScrollArea, QSplitter, QGroupBox, QGridLayout, QInputDialog
+        QScrollArea, QSplitter, QGroupBox, QGridLayout, QInputDialog,
+        QDialog, QFormLayout
     )
     from PySide6.QtGui import QIcon, QPixmap, QFont, QColor
     from PySide6.QtCore import Qt, QThread, Signal
@@ -76,6 +77,35 @@ def get_workspace_root() -> Path:
         if (p / "projects.json").exists() or (p / ".git").exists():
             return p
     return curr.parent  # default fallback to parent directory
+
+
+class ConfigManager:
+    """Manages reading and writing uploader_config.json."""
+    def __init__(self, workspace_root: Path) -> None:
+        self.root = workspace_root
+        self.config_file = self.root / "uploader_config.json"
+
+    def load_config(self) -> Dict[str, str]:
+        defaults = {
+            "repo_url": "https://github.com/Jaspreetkohli72/Infinity-Facilities-Management.git",
+            "token": "",
+            "branch": "main",
+            "git_name": "Infinity Facilities",
+            "git_email": "infinityfacilitiesmanagement@gmail.com"
+        }
+        if self.config_file.exists():
+            try:
+                with open(self.config_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        defaults.update(data)
+            except Exception as e:
+                print(f"Error loading uploader_config.json: {e}")
+        return defaults
+
+    def save_config(self, data: Dict[str, str]) -> None:
+        with open(self.config_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
 
 
 class ProjectManager:
@@ -190,6 +220,9 @@ class GitManager:
         except Exception:
             return False
 
+    def is_git_repo(self) -> bool:
+        return (self.root / ".git").exists()
+
     def is_auth_error(self, err_msg: str) -> bool:
         msg = err_msg.lower()
         return any(k in msg for k in [
@@ -210,6 +243,58 @@ class GitManager:
             new_url = f"https://{token}@github.com/{clean_url}"
             return self.run_command(["git", "remote", "set-url", "origin", new_url])
         return False, "Remote origin is not hosted on GitHub."
+
+    def setup_repository(
+        self,
+        repo_url: str,
+        token: str = "",
+        branch: str = "main",
+        user_name: str = "",
+        user_email: str = "",
+        log_callback=None
+    ) -> Tuple[bool, str]:
+        repo_url = repo_url.strip()
+        token = token.strip()
+        branch = branch.strip() or "main"
+
+        auth_url = repo_url
+        if token and "github.com" in repo_url:
+            clean_url = repo_url.split("github.com/")[-1]
+            auth_url = f"https://{token}@github.com/{clean_url}"
+
+        # Initialize .git if not present
+        if not self.is_git_repo():
+            if log_callback:
+                log_callback("[Git Setup] Initializing local Git repository...")
+            ok, msg = self.run_command(["git", "init"], log_callback=log_callback)
+            if not ok:
+                return False, f"Git init failed: {msg}"
+
+        # Configure remote origin
+        ok_remote, origin_url = self.run_command(["git", "remote", "get-url", "origin"])
+        if ok_remote:
+            self.run_command(["git", "remote", "set-url", "origin", auth_url], log_callback=log_callback)
+        else:
+            self.run_command(["git", "remote", "add", "origin", auth_url], log_callback=log_callback)
+
+        # Set user name & email
+        if user_name:
+            self.run_command(["git", "config", "user.name", user_name], log_callback=log_callback)
+        if user_email:
+            self.run_command(["git", "config", "user.email", user_email], log_callback=log_callback)
+
+        # Fetch and sync
+        if log_callback:
+            log_callback(f"[Git Setup] Fetching remote branch '{branch}'...")
+        ok_fetch, msg_fetch = self.run_command(["git", "fetch", "origin"], log_callback=log_callback)
+        if not ok_fetch:
+            return False, f"Git fetch failed: {msg_fetch}"
+
+        self.run_command(["git", "checkout", "-B", branch], log_callback=log_callback)
+        self.run_command(["git", "branch", f"--set-upstream-to=origin/{branch}", branch], log_callback=log_callback)
+        self.run_command(["git", "pull", "origin", branch], log_callback=log_callback)
+
+        return True, "Git repository initialized and synchronized successfully!"
 
     def run_command(self, cmd: List[str], log_callback=None) -> Tuple[bool, str]:
         cmd_str = " ".join(cmd)
@@ -256,6 +341,150 @@ class GitManager:
 # ==========================================
 
 if HAS_PYSIDE:
+    class GitSetupDialog(QDialog):
+        """Dialog to configure Git repository URL, PAT token, and user settings."""
+        def __init__(self, workspace_root: Path, parent=None) -> None:
+            super().__init__(parent)
+            self.root = workspace_root
+            self.cm = ConfigManager(self.root)
+            self.gm = GitManager(self.root)
+            self.config = self.cm.load_config()
+            self.init_ui()
+
+        def init_ui(self) -> None:
+            self.setWindowTitle("Git Repository & Settings Setup")
+            self.resize(560, 430)
+            self.setStyleSheet("""
+                QDialog {
+                    background-color: #0F172A;
+                    color: #F8FAFC;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                }
+                QLabel { color: #E2E8F0; font-size: 13px; font-weight: 500; }
+                QLineEdit {
+                    background-color: #1E293B;
+                    border: 1px solid #475569;
+                    border-radius: 6px;
+                    color: #F8FAFC;
+                    padding: 8px;
+                    font-size: 13px;
+                }
+                QLineEdit:focus { border: 1px solid #38BDF8; }
+                QPushButton {
+                    background-color: #3B82F6;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 10px 18px;
+                    font-weight: 600;
+                    font-size: 13px;
+                }
+                QPushButton:hover { background-color: #2563EB; }
+                QPushButton#actionBtn { background-color: #10B981; }
+                QPushButton#actionBtn:hover { background-color: #059669; }
+                QTextEdit {
+                    background-color: #090D16;
+                    border: 1px solid #334155;
+                    color: #A7F3D0;
+                    font-family: Consolas, monospace;
+                    font-size: 11px;
+                }
+            """)
+
+            layout = QVBoxLayout(self)
+            layout.setSpacing(12)
+
+            title = QLabel("⚙️ Git Repository Setup & Credentials")
+            title.setStyleSheet("font-size: 18px; font-weight: 800; color: #38BDF8;")
+            layout.addWidget(title)
+
+            sub = QLabel("Configure repository URL, authentication token, and Git user credentials for this computer.")
+            sub.setStyleSheet("font-size: 12px; color: #94A3B8;")
+            sub.setWordWrap(True)
+            layout.addWidget(sub)
+
+            form = QFormLayout()
+            form.setSpacing(12)
+
+            self.url_input = QLineEdit(self.config.get("repo_url", ""))
+            form.addRow("Repository URL *", self.url_input)
+
+            self.token_input = QLineEdit(self.config.get("token", ""))
+            self.token_input.setEchoMode(QLineEdit.Password)
+            self.token_input.setPlaceholderText("GitHub Personal Access Token (PAT)")
+            form.addRow("GitHub Token (PAT)", self.token_input)
+
+            self.branch_input = QLineEdit(self.config.get("branch", "main"))
+            form.addRow("Target Branch", self.branch_input)
+
+            self.name_input = QLineEdit(self.config.get("git_name", ""))
+            form.addRow("Git User Name", self.name_input)
+
+            self.email_input = QLineEdit(self.config.get("git_email", ""))
+            form.addRow("Git User Email", self.email_input)
+
+            layout.addLayout(form)
+
+            self.log_output = QTextEdit()
+            self.log_output.setReadOnly(True)
+            self.log_output.setMaximumHeight(90)
+            layout.addWidget(self.log_output)
+
+            btn_h = QHBoxLayout()
+            setup_btn = QPushButton("🚀 Initialize & Sync Repository")
+            setup_btn.setObjectName("actionBtn")
+            setup_btn.clicked.connect(self.on_setup_clicked)
+
+            save_btn = QPushButton("Save Settings Only")
+            save_btn.clicked.connect(self.on_save_clicked)
+
+            close_btn = QPushButton("Close")
+            close_btn.clicked.connect(self.accept)
+
+            btn_h.addWidget(setup_btn)
+            btn_h.addWidget(save_btn)
+            btn_h.addWidget(close_btn)
+            layout.addLayout(btn_h)
+
+        def get_data(self) -> Dict[str, str]:
+            return {
+                "repo_url": self.url_input.text().strip(),
+                "token": self.token_input.text().strip(),
+                "branch": self.branch_input.text().strip() or "main",
+                "git_name": self.name_input.text().strip(),
+                "git_email": self.email_input.text().strip()
+            }
+
+        def on_save_clicked(self) -> None:
+            data = self.get_data()
+            self.cm.save_config(data)
+            self.log_output.append("[Config] Settings saved to uploader_config.json")
+            QMessageBox.information(self, "Saved", "Settings saved successfully!")
+
+        def on_setup_clicked(self) -> None:
+            data = self.get_data()
+            if not data["repo_url"]:
+                QMessageBox.warning(self, "Input Error", "Repository URL is required.")
+                return
+
+            self.cm.save_config(data)
+            self.log_output.clear()
+            self.log_output.append("[Setup] Starting repository initialization & sync...")
+
+            ok, msg = self.gm.setup_repository(
+                repo_url=data["repo_url"],
+                token=data["token"],
+                branch=data["branch"],
+                user_name=data["git_name"],
+                user_email=data["git_email"],
+                log_callback=self.log_output.append
+            )
+
+            if ok:
+                QMessageBox.information(self, "Git Setup Complete", msg)
+            else:
+                QMessageBox.critical(self, "Setup Failed", msg)
+
     class StartupSyncWorker(QThread):
         """Worker thread to pull latest files from Git on app launch or manual sync."""
         log_signal = Signal(str)
@@ -372,7 +601,10 @@ if HAS_PYSIDE:
             self.sync_worker: Optional[StartupSyncWorker] = None
 
             self.init_ui()
-            self.run_git_sync(silent_success=True)
+            if not GitManager(self.root).is_git_repo():
+                self.open_git_setup()
+            else:
+                self.run_git_sync(silent_success=True)
 
         def init_ui(self) -> None:
             self.setWindowTitle("Infinity Facilities Management - Project Uploader")
@@ -488,7 +720,16 @@ if HAS_PYSIDE:
             header_layout.addLayout(header_v)
             header_layout.addStretch()
 
+            setup_header_btn = QPushButton("⚙️ Git Setup")
+            setup_header_btn.setObjectName("secondaryBtn")
+            setup_header_btn.clicked.connect(self.open_git_setup)
+            header_layout.addWidget(setup_header_btn)
+
             main_layout.addLayout(header_layout)
+
+        def open_git_setup(self) -> None:
+            dlg = GitSetupDialog(self.root, parent=self)
+            dlg.exec()
 
             # Scroll Area containing Forms
             scroll = QScrollArea()
