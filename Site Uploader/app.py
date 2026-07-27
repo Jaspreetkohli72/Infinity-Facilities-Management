@@ -80,10 +80,22 @@ def get_workspace_root() -> Path:
 
 
 class ConfigManager:
-    """Manages reading and writing uploader_config.json."""
+    """Manages reading and writing uploader_config.json with fallback path handling."""
     def __init__(self, workspace_root: Path) -> None:
         self.root = workspace_root
         self.config_file = self.root / "uploader_config.json"
+        self.user_fallback_file = Path.home() / ".infinity_uploader" / "uploader_config.json"
+
+    def get_target_file(self) -> Path:
+        try:
+            self.root.mkdir(parents=True, exist_ok=True)
+            test_file = self.root / ".write_test"
+            test_file.touch()
+            test_file.unlink(missing_ok=True)
+            return self.config_file
+        except Exception:
+            self.user_fallback_file.parent.mkdir(parents=True, exist_ok=True)
+            return self.user_fallback_file
 
     def load_config(self) -> Dict[str, str]:
         defaults = {
@@ -93,9 +105,13 @@ class ConfigManager:
             "git_name": "Infinity Facilities",
             "git_email": "infinityfacilitiesmanagement@gmail.com"
         }
-        if self.config_file.exists():
+        target = self.get_target_file()
+        if not target.exists() and self.config_file.exists():
+            target = self.config_file
+
+        if target.exists():
             try:
-                with open(self.config_file, "r", encoding="utf-8") as f:
+                with open(target, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     if isinstance(data, dict):
                         defaults.update(data)
@@ -103,9 +119,12 @@ class ConfigManager:
                 print(f"Error loading uploader_config.json: {e}")
         return defaults
 
-    def save_config(self, data: Dict[str, str]) -> None:
-        with open(self.config_file, "w", encoding="utf-8") as f:
+    def save_config(self, data: Dict[str, str]) -> Path:
+        target = self.get_target_file()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with open(target, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
+        return target
 
 
 class ProjectManager:
@@ -565,16 +584,21 @@ if HAS_PYSIDE:
         def on_save_clicked(self) -> None:
             self.append_log_text("------------------------------------------")
             self.append_log_text("[Config] Saving Git configuration settings...")
-            data = self.get_data()
-            self.cm.save_config(data)
-            self.append_log_text(f"[Config] Saved to: {self.cm.config_file}")
-            self.append_log_text(f"[Config] Repository URL: {data['repo_url']}")
-            self.append_log_text(f"[Config] Target Branch: {data['branch']}")
-            self.append_log_text(f"[Config] User Name: {data['git_name']}")
-            self.append_log_text(f"[Config] User Email: {data['git_email']}")
-            self.append_log_text("✔ Settings saved successfully!")
-            self.append_log_text("------------------------------------------")
-            QMessageBox.information(self, "Saved", "Settings saved successfully to uploader_config.json!")
+            try:
+                data = self.get_data()
+                saved_path = self.cm.save_config(data)
+                self.append_log_text(f"[Config] Saved to: {saved_path}")
+                self.append_log_text(f"[Config] Repository URL: {data['repo_url']}")
+                self.append_log_text(f"[Config] Target Branch: {data['branch']}")
+                self.append_log_text(f"[Config] User Name: {data['git_name']}")
+                self.append_log_text(f"[Config] User Email: {data['git_email']}")
+                self.append_log_text("✔ Settings saved successfully!")
+                self.append_log_text("------------------------------------------")
+                QMessageBox.information(self, "Saved", f"Settings saved successfully to:\n{saved_path}")
+            except Exception as e:
+                self.append_log_text(f"❌ Save Failed: {str(e)}")
+                self.append_log_text("------------------------------------------")
+                QMessageBox.critical(self, "Save Error", f"Failed to save settings: {str(e)}")
 
         def on_setup_clicked(self) -> None:
             data = self.get_data()
