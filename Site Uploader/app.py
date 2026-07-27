@@ -208,14 +208,43 @@ class AssetManager:
         return cover_rel_path, logo_rel_path, gallery_rel_paths
 
 
+def find_git_executable() -> Optional[str]:
+    """Find git executable across system PATH and standard Windows install locations."""
+    g = shutil.which("git")
+    if g:
+        return g
+
+    common_paths = [
+        r"C:\Program Files\Git\cmd\git.exe",
+        r"C:\Program Files\Git\bin\git.exe",
+        r"C:\Program Files (x86)\Git\cmd\git.exe",
+        r"C:\Program Files (x86)\Git\bin\git.exe",
+    ]
+    user_profile = os.environ.get("USERPROFILE", "")
+    if user_profile:
+        common_paths.append(os.path.join(user_profile, r"AppData\Local\Programs\Git\cmd\git.exe"))
+        common_paths.append(os.path.join(user_profile, r"AppData\Local\Programs\Git\bin\git.exe"))
+
+    for p in common_paths:
+        if os.path.exists(p):
+            return p
+
+    return None
+
+
 class GitManager:
     """Executes git commands via subprocess."""
     def __init__(self, workspace_root: Path) -> None:
         self.root = workspace_root
 
+    def get_git_bin(self) -> str:
+        exe = find_git_executable()
+        return exe if exe else "git"
+
     def is_git_installed(self) -> bool:
+        exe = self.get_git_bin()
         try:
-            res = subprocess.run(["git", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=(os.name == "nt"))
+            res = subprocess.run([exe, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             return res.returncode == 0
         except Exception:
             return False
@@ -312,6 +341,11 @@ class GitManager:
         return True, "Git repository initialized and synchronized successfully!"
 
     def run_command(self, cmd: List[str], log_callback=None) -> Tuple[bool, str]:
+        git_bin = self.get_git_bin()
+        exec_cmd = list(cmd)
+        if exec_cmd and exec_cmd[0] == "git":
+            exec_cmd[0] = git_bin
+
         cmd_str = " ".join(cmd)
         if log_callback:
             log_callback(f"$ {cmd_str}")
@@ -320,27 +354,34 @@ class GitManager:
         env["GIT_TERMINAL_PROMPT"] = "0"  # Prevent Git from hanging on terminal prompts
 
         try:
-            result = subprocess.run(
-                cmd,
+            process = subprocess.Popen(
+                exec_cmd,
                 cwd=str(self.root),
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
                 env=env,
-                shell=(os.name == "nt")
+                bufsize=1
             )
-            output = result.stdout.strip()
-            err = result.stderr.strip()
-            combined = f"{output}\n{err}".strip()
 
-            if log_callback and combined:
-                log_callback(combined)
+            full_output = []
+            if process.stdout:
+                for line in iter(process.stdout.readline, ''):
+                    clean_line = line.rstrip()
+                    if clean_line:
+                        full_output.append(clean_line)
+                        if log_callback:
+                            log_callback(clean_line)
+                process.stdout.close()
 
-            if result.returncode != 0:
-                return False, f"Git command failed (exit code {result.returncode}): {err or output}"
-            return True, output
+            process.wait()
+            combined = "\n".join(full_output)
+
+            if process.returncode != 0:
+                return False, f"Git command failed (exit code {process.returncode}): {combined}"
+            return True, combined
         except FileNotFoundError:
-            err_msg = "Git CLI is not installed on this system."
+            err_msg = f"Git executable '{git_bin}' not found."
             if log_callback:
                 log_callback(err_msg)
             return False, err_msg
@@ -522,18 +563,35 @@ if HAS_PYSIDE:
             }
 
         def on_save_clicked(self) -> None:
+            self.append_log_text("------------------------------------------")
+            self.append_log_text("[Config] Saving Git configuration settings...")
             data = self.get_data()
             self.cm.save_config(data)
-            self.append_log_text("[Config] Settings saved to uploader_config.json")
+            self.append_log_text(f"[Config] Saved to: {self.cm.config_file}")
+            self.append_log_text(f"[Config] Repository URL: {data['repo_url']}")
+            self.append_log_text(f"[Config] Target Branch: {data['branch']}")
+            self.append_log_text(f"[Config] User Name: {data['git_name']}")
+            self.append_log_text(f"[Config] User Email: {data['git_email']}")
+            self.append_log_text("✔ Settings saved successfully!")
+            self.append_log_text("------------------------------------------")
             QMessageBox.information(self, "Saved", "Settings saved successfully to uploader_config.json!")
 
         def on_setup_clicked(self) -> None:
             data = self.get_data()
+            self.log_output.clear()
+            self.append_log_text("==========================================")
+            self.append_log_text("🚀 STARTING GIT REPOSITORY SETUP & SYNC")
+            self.append_log_text("==========================================")
+
             if not data["repo_url"]:
+                self.append_log_text("❌ ERROR: Repository URL is required.")
                 QMessageBox.warning(self, "Input Error", "Repository URL is required.")
                 return
 
+            git_bin = self.gm.get_git_bin()
+            self.append_log_text(f"[Git Check] Using Git binary: {git_bin}")
             if not self.gm.is_git_installed():
+                self.append_log_text("❌ ERROR: Git CLI is not installed or not working on this system.")
                 QMessageBox.critical(
                     self,
                     "Git CLI Missing",
@@ -541,9 +599,9 @@ if HAS_PYSIDE:
                 )
                 return
 
+            self.append_log_text("[Config] Saving parameters to uploader_config.json...")
             self.cm.save_config(data)
-            self.log_output.clear()
-            self.append_log_text("[Setup] Initializing background repository sync...")
+            self.append_log_text("[Setup] Launching background sync worker thread...")
             self.setup_btn.setEnabled(False)
 
             self.worker = SetupWorker(
@@ -561,11 +619,16 @@ if HAS_PYSIDE:
 
         def on_setup_finished(self, ok: bool, msg: str) -> None:
             self.setup_btn.setEnabled(True)
+            self.append_log_text("------------------------------------------")
             if ok:
-                self.append_log_text(f"[Setup Complete] {msg}")
+                self.append_log_text("🎉 GIT REPOSITORY SETUP COMPLETE!")
+                self.append_log_text(f"Result: {msg}")
+                self.append_log_text("==========================================")
                 QMessageBox.information(self, "Git Setup Complete", msg)
             else:
-                self.append_log_text(f"[Setup Failed] {msg}")
+                self.append_log_text("❌ SETUP FAILED!")
+                self.append_log_text(f"Error: {msg}")
+                self.append_log_text("==========================================")
                 QMessageBox.critical(self, "Setup Failed", msg)
 
     class StartupSyncWorker(QThread):
