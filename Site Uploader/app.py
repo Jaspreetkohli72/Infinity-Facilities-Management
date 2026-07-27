@@ -12,7 +12,7 @@ try:
         QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
         QLabel, QLineEdit, QTextEdit, QComboBox, QPushButton, QFileDialog,
         QListWidget, QListWidgetItem, QProgressBar, QMessageBox, QFrame,
-        QScrollArea, QSplitter, QGroupBox, QGridLayout
+        QScrollArea, QSplitter, QGroupBox, QGridLayout, QInputDialog
     )
     from PySide6.QtGui import QIcon, QPixmap, QFont, QColor
     from PySide6.QtCore import Qt, QThread, Signal
@@ -183,10 +183,41 @@ class GitManager:
     def __init__(self, workspace_root: Path) -> None:
         self.root = workspace_root
 
+    def is_git_installed(self) -> bool:
+        try:
+            res = subprocess.run(["git", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=(os.name == "nt"))
+            return res.returncode == 0
+        except Exception:
+            return False
+
+    def is_auth_error(self, err_msg: str) -> bool:
+        msg = err_msg.lower()
+        return any(k in msg for k in [
+            "authentication failed", "permission denied", "could not read username",
+            "terminal prompts disabled", "invalid credentials", "log in"
+        ])
+
+    def configure_token(self, token: str) -> Tuple[bool, str]:
+        token = token.strip()
+        if not token:
+            return False, "Token cannot be empty."
+        ok, origin_url = self.run_command(["git", "remote", "get-url", "origin"])
+        if not ok or not origin_url:
+            return False, "Failed to retrieve git remote origin URL."
+        
+        if "github.com" in origin_url:
+            clean_url = origin_url.split("github.com/")[-1]
+            new_url = f"https://{token}@github.com/{clean_url}"
+            return self.run_command(["git", "remote", "set-url", "origin", new_url])
+        return False, "Remote origin is not hosted on GitHub."
+
     def run_command(self, cmd: List[str], log_callback=None) -> Tuple[bool, str]:
         cmd_str = " ".join(cmd)
         if log_callback:
             log_callback(f"$ {cmd_str}")
+
+        env = os.environ.copy()
+        env["GIT_TERMINAL_PROMPT"] = "0"  # Prevent Git from hanging on terminal prompts
 
         try:
             result = subprocess.run(
@@ -195,6 +226,7 @@ class GitManager:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                env=env,
                 shell=(os.name == "nt")
             )
             output = result.stdout.strip()
@@ -207,6 +239,11 @@ class GitManager:
             if result.returncode != 0:
                 return False, f"Git command failed (exit code {result.returncode}): {err or output}"
             return True, output
+        except FileNotFoundError:
+            err_msg = "Git CLI is not installed on this system."
+            if log_callback:
+                log_callback(err_msg)
+            return False, err_msg
         except Exception as e:
             err_msg = f"Failed to execute '{cmd_str}': {str(e)}"
             if log_callback:
@@ -752,13 +789,32 @@ if HAS_PYSIDE:
         def append_log(self, text: str) -> None:
             self.log_console.append(text)
 
+        def prompt_token_dialog(self) -> None:
+            token, ok = QInputDialog.getText(
+                self,
+                "GitHub Authentication Required",
+                "Enter your GitHub Personal Access Token (PAT) to enable automatic web publishing:",
+                QLineEdit.Password
+            )
+            if ok and token.strip():
+                succ, msg = GitManager(self.root).configure_token(token.strip())
+                if succ:
+                    QMessageBox.information(self, "Token Saved", "GitHub authentication token configured successfully! Click Publish to retry.")
+                else:
+                    QMessageBox.warning(self, "Configuration Error", msg)
+
         def on_publish_finished(self, success: bool, message: str) -> None:
             self.publish_btn.setEnabled(True)
             if success:
                 QMessageBox.information(self, "Success", message)
                 self.reset_form()
             else:
-                QMessageBox.critical(self, "Publish Failed", message)
+                gm = GitManager(self.root)
+                if gm.is_auth_error(message):
+                    QMessageBox.critical(self, "Git Authentication Required", message)
+                    self.prompt_token_dialog()
+                else:
+                    QMessageBox.critical(self, "Publish Failed", message)
 
 
 # ==========================================
