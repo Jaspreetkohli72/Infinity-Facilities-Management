@@ -117,34 +117,18 @@
   {
     "id": 7,
     "title": "test",
-    "category": "hospitality",
-    "client": "test",
-    "completionDate": "test",
-    "location": "test",
-    "logo": "assets/img/projects/test/logo.png",
+    "category": "residential",
+    "client": "es",
+    "completionDate": "es",
+    "location": "es",
+    "logo": "assets/img/projects/test/logo.webp",
     "image": "assets/img/projects/test/cover.png",
     "gallery": [
-      "assets/img/projects/test/gallery-1.png",
-      "assets/img/projects/test/gallery-2.png",
-      "assets/img/projects/test/gallery-3.png",
-      "assets/img/projects/test/gallery-4.png"
+      "assets/img/projects/test/gallery-1.webp"
     ],
-    "description": "test",
+    "description": "testtttttttttt",
     "features": [
-      "tes"
+      "es"
     ]
-  },
-  {
-    "id": 8,
-    "title": "es",
-    "category": "residential",
-    "client": "",
-    "completionDate": "",
-    "location": "",
-    "logo": "",
-    "image": "",
-    "gallery": [],
-    "description": "rffsd",
-    "features": []
   }
 ]
