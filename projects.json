@@ -1,0 +1,137 @@
+[
+  {
+    "id": 1,
+    "title": "Maruti Lifestyle",
+    "category": "residential",
+    "client": "Avinash Group",
+    "completionDate": "",
+    "location": "Raipur",
+    "logo": "assets/img/avinash-group-logo.webp",
+    "image": "assets/img/maruti-lifestyle-img.jpg",
+    "gallery": [],
+    "description": "A premium residential township by Avinash Group offering world-class amenities and a luxurious lifestyle. Features spacious villas and apartments surrounded by lush greenery.",
+    "features": [
+      "Gated Community",
+      "Clubhouse",
+      "Swimming Pool",
+      "24/7 Security",
+      "Landscaped Gardens"
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Avinash One",
+    "category": "commercial",
+    "client": "Avinash Group",
+    "completionDate": "",
+    "location": "Raipur",
+    "logo": "assets/img/avinash-group-logo.webp",
+    "image": "assets/img/avinash-one-building.webp",
+    "gallery": [],
+    "description": "The tallest building in Chhattisgarh, Avinash One redefines luxury living with sky-high amenities and breathtaking views of Raipur.",
+    "features": [
+      "Sky Lounge",
+      "Infinity Pool",
+      "Smart Home Automation",
+      "Premium Concierge",
+      "High-speed Elevators"
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Chandra Icon",
+    "category": "commercial",
+    "client": "Chandra Projects",
+    "completionDate": "",
+    "location": "",
+    "logo": "assets/img/projects/chandra-logo.png",
+    "logoStyle": "filter: invert(1) brightness(0);",
+    "image": "assets/img/commercial-project.webp",
+    "gallery": [],
+    "description": "A modern residential complex by Chandra Projects, designed for comfort and connectivity. Offers well-planned apartments with essential amenities.",
+    "features": [
+      "Strategic Location",
+      "Modern Architecture",
+      "Community Hall",
+      "Children's Play Area",
+      "Power Backup"
+    ]
+  },
+  {
+    "id": 4,
+    "title": "Golden Trade Centre",
+    "category": "commercial",
+    "client": "",
+    "completionDate": "",
+    "location": "Raipur",
+    "logo": "assets/img/projects/golden-trade-centre-logo.webp",
+    "image": "assets/img/golden-trade-centre-building.webp",
+    "gallery": [],
+    "description": "A landmark commercial hub in Raipur, Golden Trade Centre offers premium office spaces and retail outlets for growing businesses.",
+    "features": [
+      "Prime Commercial Location",
+      "Ample Parking",
+      "Modern Facade",
+      "High Visibility",
+      "24/7 Maintenance"
+    ]
+  },
+  {
+    "id": 5,
+    "title": "ASG Eye Hospital",
+    "category": "healthcare",
+    "client": "ASG Eye Hospital",
+    "completionDate": "",
+    "location": "",
+    "logo": "assets/img/asg-eye-hospital-logo.webp",
+    "image": "assets/img/asg-eye-hospital-building.webp",
+    "gallery": [],
+    "description": "State-of-the-art eye care facility providing comprehensive ophthalmic services. Managed by Infinity Facilities Management for optimal operational efficiency.",
+    "features": [
+      "Specialized OT Cleaning",
+      "Bio-medical Waste Management",
+      "Hygiene Maintenance",
+      "Patient Support Services",
+      "24/7 Facility Support"
+    ]
+  },
+  {
+    "id": 6,
+    "title": "Carcinoma Cancer Clinic",
+    "category": "healthcare",
+    "client": "",
+    "completionDate": "",
+    "location": "",
+    "logo": "assets/img/projects/carcinoma-clinic-logo.webp",
+    "image": "assets/img/carcinoma-clinic-building.webp",
+    "gallery": [],
+    "description": "Advanced cancer care center focused on patient comfort and hygiene. Our facility management ensures a sterile and safe environment for patients.",
+    "features": [
+      "Sterile Environment",
+      "Infection Control",
+      "Specialized Housekeeping",
+      "HVAC Maintenance",
+      "Emergency Response Support"
+    ]
+  },
+  {
+    "id": 7,
+    "title": "test",
+    "category": "hospitality",
+    "client": "test",
+    "completionDate": "test",
+    "location": "test",
+    "logo": "assets/img/projects/test/logo.png",
+    "image": "assets/img/projects/test/cover.png",
+    "gallery": [
+      "assets/img/projects/test/gallery-1.png",
+      "assets/img/projects/test/gallery-2.png",
+      "assets/img/projects/test/gallery-3.png",
+      "assets/img/projects/test/gallery-4.png"
+    ],
+    "description": "test",
+    "features": [
+      "tes"
+    ]
+  }
+]
