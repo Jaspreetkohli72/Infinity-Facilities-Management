@@ -18,3 +18,9 @@ __pycache__/
 
 # Documents
 *.pdf
+
+# PyInstaller
+build/
+dist/
+*.spec
+

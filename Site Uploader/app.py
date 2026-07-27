@@ -63,6 +63,13 @@ class ProjectData:
 
 def get_workspace_root() -> Path:
     """Find the root directory containing projects.json or .git."""
+    if getattr(sys, 'frozen', False):
+        exe_dir = Path(sys.executable).resolve().parent
+        for p in [exe_dir, exe_dir.parent, exe_dir.parent.parent]:
+            if (p / "projects.json").exists() or (p / ".git").exists():
+                return p
+        return exe_dir.parent if (exe_dir.parent / "projects.json").exists() else exe_dir
+
     curr = Path(__file__).resolve().parent
     # Walk up to find .git or projects.json
     for p in [curr, curr.parent, curr.parent.parent]:
