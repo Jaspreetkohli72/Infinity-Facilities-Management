@@ -728,10 +728,6 @@ if HAS_PYSIDE:
 
             main_layout.addLayout(header_layout)
 
-        def open_git_setup(self) -> None:
-            dlg = GitSetupDialog(self.root, parent=self)
-            dlg.exec()
-
             # Scroll Area containing Forms
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
@@ -907,6 +903,10 @@ if HAS_PYSIDE:
 
             bottom_v.addLayout(bottom_h)
             main_layout.addLayout(bottom_v)
+
+        def open_git_setup(self) -> None:
+            dlg = GitSetupDialog(self.root, parent=self)
+            dlg.exec()
 
         def run_git_sync(self, silent_success: bool = False) -> None:
             self.append_log("[Startup] Checking for remote repository updates...")
