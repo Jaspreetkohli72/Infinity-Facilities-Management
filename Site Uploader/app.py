@@ -257,6 +257,13 @@ class GitManager:
         token = token.strip()
         branch = branch.strip() or "main"
 
+        # Strip any existing credentials embedded in repo_url
+        if "@" in repo_url and "://" in repo_url:
+            proto, rest = repo_url.split("://", 1)
+            if "@" in rest:
+                rest = rest.split("@", 1)[-1]
+            repo_url = f"{proto}://{rest}"
+
         auth_url = repo_url
         if token and "github.com" in repo_url:
             clean_url = repo_url.split("github.com/")[-1]
@@ -292,7 +299,12 @@ class GitManager:
 
         self.run_command(["git", "checkout", "-B", branch], log_callback=log_callback)
         self.run_command(["git", "branch", f"--set-upstream-to=origin/{branch}", branch], log_callback=log_callback)
-        self.run_command(["git", "pull", "origin", branch], log_callback=log_callback)
+        
+        ok_pull, msg_pull = self.run_command(["git", "pull", "origin", branch], log_callback=log_callback)
+        if not ok_pull:
+            if log_callback:
+                log_callback("[Git Setup Notice] Pull encountered conflicts/untracked files; attempting reset to remote state...")
+            self.run_command(["git", "reset", "--hard", f"origin/{branch}"], log_callback=log_callback)
 
         return True, "Git repository initialized and synchronized successfully!"
 
@@ -341,6 +353,41 @@ class GitManager:
 # ==========================================
 
 if HAS_PYSIDE:
+    class SetupWorker(QThread):
+        """Background worker thread to initialize and sync Git repository without freezing the UI."""
+        log_signal = Signal(str)
+        finished_signal = Signal(bool, str)
+
+        def __init__(
+            self,
+            workspace_root: Path,
+            repo_url: str,
+            token: str,
+            branch: str,
+            user_name: str,
+            user_email: str
+        ) -> None:
+            super().__init__()
+            self.root = workspace_root
+            self.repo_url = repo_url
+            self.token = token
+            self.branch = branch
+            self.user_name = user_name
+            self.user_email = user_email
+            self.gm = GitManager(self.root)
+
+        def run(self) -> None:
+            ok, msg = self.gm.setup_repository(
+                repo_url=self.repo_url,
+                token=self.token,
+                branch=self.branch,
+                user_name=self.user_name,
+                user_email=self.user_email,
+                log_callback=self.log_signal.emit
+            )
+            self.finished_signal.emit(ok, msg)
+
+
     class GitSetupDialog(QDialog):
         """Dialog to configure Git repository URL, PAT token, and user settings."""
         def __init__(self, workspace_root: Path, parent=None) -> None:
@@ -349,6 +396,7 @@ if HAS_PYSIDE:
             self.cm = ConfigManager(self.root)
             self.gm = GitManager(self.root)
             self.config = self.cm.load_config()
+            self.worker: Optional[SetupWorker] = None
             self.init_ui()
 
         def init_ui(self) -> None:
@@ -431,9 +479,9 @@ if HAS_PYSIDE:
             layout.addWidget(self.log_output)
 
             btn_h = QHBoxLayout()
-            setup_btn = QPushButton("🚀 Initialize & Sync Repository")
-            setup_btn.setObjectName("actionBtn")
-            setup_btn.clicked.connect(self.on_setup_clicked)
+            self.setup_btn = QPushButton("🚀 Initialize & Sync Repository")
+            self.setup_btn.setObjectName("actionBtn")
+            self.setup_btn.clicked.connect(self.on_setup_clicked)
 
             save_btn = QPushButton("Save Settings Only")
             save_btn.clicked.connect(self.on_save_clicked)
@@ -441,7 +489,7 @@ if HAS_PYSIDE:
             close_btn = QPushButton("Close")
             close_btn.clicked.connect(self.accept)
 
-            btn_h.addWidget(setup_btn)
+            btn_h.addWidget(self.setup_btn)
             btn_h.addWidget(save_btn)
             btn_h.addWidget(close_btn)
             layout.addLayout(btn_h)
@@ -469,21 +517,26 @@ if HAS_PYSIDE:
 
             self.cm.save_config(data)
             self.log_output.clear()
-            self.log_output.append("[Setup] Starting repository initialization & sync...")
+            self.log_output.append("[Setup] Initializing background repository sync...")
+            self.setup_btn.setEnabled(False)
 
-            ok, msg = self.gm.setup_repository(
+            self.worker = SetupWorker(
+                workspace_root=self.root,
                 repo_url=data["repo_url"],
                 token=data["token"],
                 branch=data["branch"],
                 user_name=data["git_name"],
-                user_email=data["git_email"],
-                log_callback=self.log_output.append
+                user_email=data["git_email"]
             )
-
-            if ok:
-                QMessageBox.information(self, "Git Setup Complete", msg)
-            else:
-                QMessageBox.critical(self, "Setup Failed", msg)
+            self.worker.log_signal.connect(self.log_output.append)
+            def on_finished(ok: bool, msg: str):
+                self.setup_btn.setEnabled(True)
+                if ok:
+                    QMessageBox.information(self, "Git Setup Complete", msg)
+                else:
+                    QMessageBox.critical(self, "Setup Failed", msg)
+            self.worker.finished_signal.connect(on_finished)
+            self.worker.start()
 
     class StartupSyncWorker(QThread):
         """Worker thread to pull latest files from Git on app launch or manual sync."""
