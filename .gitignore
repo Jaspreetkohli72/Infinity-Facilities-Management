@@ -24,5 +24,12 @@ build/
 dist/
 *.spec
 Site Uploader/ProjectUploader/
+_internal/
+ProjectUploader.exe
+
+# Local Credentials & Configs
+uploader_config.json
+uploader_config*.json
+Site Uploader/uploader_config.json
 
 

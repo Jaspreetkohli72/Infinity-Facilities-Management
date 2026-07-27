@@ -80,22 +80,15 @@ def get_workspace_root() -> Path:
 
 
 class ConfigManager:
-    """Manages reading and writing uploader_config.json with fallback path handling."""
+    """Manages reading and writing uploader_config.json outside repository to prevent secret commits."""
     def __init__(self, workspace_root: Path) -> None:
         self.root = workspace_root
-        self.config_file = self.root / "uploader_config.json"
-        self.user_fallback_file = Path.home() / ".infinity_uploader" / "uploader_config.json"
+        self.user_config_file = Path.home() / ".infinity_uploader" / "uploader_config.json"
+        self.repo_config_file = self.root / "uploader_config.json"
 
     def get_target_file(self) -> Path:
-        try:
-            self.root.mkdir(parents=True, exist_ok=True)
-            test_file = self.root / ".write_test"
-            test_file.touch()
-            test_file.unlink(missing_ok=True)
-            return self.config_file
-        except Exception:
-            self.user_fallback_file.parent.mkdir(parents=True, exist_ok=True)
-            return self.user_fallback_file
+        self.user_config_file.parent.mkdir(parents=True, exist_ok=True)
+        return self.user_config_file
 
     def load_config(self) -> Dict[str, str]:
         defaults = {
@@ -106,8 +99,9 @@ class ConfigManager:
             "git_email": "infinityfacilitiesmanagement@gmail.com"
         }
         target = self.get_target_file()
-        if not target.exists() and self.config_file.exists():
-            target = self.config_file
+        # Fallback load from repo dir if home dir config does not exist yet
+        if not target.exists() and self.repo_config_file.exists():
+            target = self.repo_config_file
 
         if target.exists():
             try:
@@ -121,9 +115,14 @@ class ConfigManager:
 
     def save_config(self, data: Dict[str, str]) -> Path:
         target = self.get_target_file()
-        target.parent.mkdir(parents=True, exist_ok=True)
         with open(target, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
+        # Also clean up any legacy repo-level uploader_config.json to prevent accidental git tracking
+        if self.repo_config_file.exists():
+            try:
+                self.repo_config_file.unlink(missing_ok=True)
+            except Exception:
+                pass
         return target
 
 
@@ -741,9 +740,9 @@ if HAS_PYSIDE:
                 self.pm.append_project(project_entry)
                 self.log_signal.emit(f"[JSON] Successfully appended project ID {next_id} to projects.json")
 
-                # Step 4: Git Add
-                self.progress_signal.emit(70, "Running git add...")
-                ok, msg = self.gm.run_command(["git", "add", "."], log_callback=self.log_signal.emit)
+                # Step 4: Git Add (Target only projects.json and assets/ directory)
+                self.progress_signal.emit(70, "Running git add projects.json assets/...")
+                ok, msg = self.gm.run_command(["git", "add", "projects.json", "assets/"], log_callback=self.log_signal.emit)
                 if not ok:
                     self.finished_signal.emit(False, f"Git add failed: {msg}")
                     return
