@@ -316,6 +316,10 @@ if HAS_PYSIDE:
             self.setWindowTitle("Infinity Facilities Management - Project Uploader")
             self.resize(1000, 750)
 
+            icon_path = self.root / "assets" / "app_icon.png"
+            if icon_path.exists():
+                self.setWindowIcon(QIcon(str(icon_path)))
+
             # Modern Styling QSS
             self.setStyleSheet("""
                 QMainWindow {
